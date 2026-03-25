@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 MOi - Wie ich Kaspar Hauser auf Netlify gebaut habe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #3987b8;
+            --black: #3e4447;
+            --light-gray: #f4f5f5;
+            --white: #ffffff;
+            --accent: #ff6b6b;
+            --success: #4CAF50;
+            --warning: #ffc107;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        /* LOGIN SCREEN */
+        #loginScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--blue) 0%, #2a5a8f 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        #loginScreen.hidden {
+            display: none;
+        }
+
+        .login-box {
+            background: var(--white);
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        .login-box h1 {
+            font-size: 2.8rem;
+            margin-bottom: 0.5rem;
+            color: var(--blue);
+        }
+
+        .login-box .subtitle {
+            color: #777;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .login-box .subsubtitle {
+            color: #aaa;
+            margin-bottom: 2rem;
+            font-size: 0.85rem;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            font-family: inherit;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(57,135,184,0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--blue), #2a5a8f);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(57,135,184,0.3);
+        }
+
+        /* MAIN APP */
+        .app {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            height: 100vh;
+        }
+
+        .app.hidden {
+            display: none;
+        }
+
+        .sidebar {
+            background: var(--light-gray);
+            padding: 2rem;
+            overflow-y: auto;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .sidebar h2 {
+            color: var(--blue);
+            font-size: 1.3rem;
+        }
+
+        .card {
+            background: white;
+            padding: 1.2rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--blue);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .card strong {
+            display: block;
+            color: var(--blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .logout-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: auto;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+        }
+
+        .chat-area {
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--blue), #2a5a8f);
+            color: white;
+            padding: 1.5rem 2rem;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .header p {
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            padding: 1rem 2rem;
+            gap: 0.5rem;
+            border-bottom: 1px solid #ddd;
+            flex-wrap: wrap;
+            overflow-x: auto;
+            background: white;
+        }
+
+        .tab-btn {
+            padding: 8px 14px;
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            color: var(--blue);
+        }
+
+        .tab-btn.active {
+            color: var(--blue);
+            border-bottom-color: var(--blue);
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .msg {
+            display: flex;
+            gap: 0.8rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg.bot {
+            justify-content: flex-start;
+        }
+
+        .msg.user {
+            justify-content: flex-end;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .msg.bot .avatar {
+            background: var(--light-gray);
+        }
+
+        .content {
+            max-width: 75%;
+            padding: 1rem 1.2rem;
+            border-radius: 8px;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .msg.bot .content {
+            background: var(--light-gray);
+            color: var(--black);
+        }
+
+        .msg.user .content {
+            background: var(--blue);
+            color: white;
+        }
+
+        .step {
+            background: #f0f8ff;
+            padding: 1rem;
+            border-left: 4px solid var(--success);
+            margin: 0.5rem 0;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .step strong {
+            color: var(--blue);
+        }
+
+        .code {
+            background: #2d2d2d;
+            color: #4ec9b0;
+            padding: 0.8rem;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            margin: 0.4rem 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .warning {
+            background: #fff3cd;
+            padding: 0.8rem;
+            border-left: 4px solid var(--warning);
+            margin: 0.5rem 0;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .success {
+            background: #d4edda;
+            padding: 0.8rem;
+            border-left: 4px solid var(--success);
+            margin: 0.5rem 0;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .input-area {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .textarea {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: none;
+            min-height: 44px;
+        }
+
+        .textarea:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+
+        .send-btn {
+            background: var(--blue);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .send-btn:hover {
+            background: #2a5a8f;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .app {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                display: none;
+            }
+            .content {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen">
+        <div class="login-box">
+            <h1>🤖 MOi</h1>
+            <p class="subtitle">Wie ich Kaspar Hauser auf Netlify gebaut habe</p>
+            <p class="subsubtitle">Ein detailliertes Resume - von der Idee zum Live Bot</p>
+            <input 
+                type="password" 
+                id="pwd" 
+                class="login-input" 
+                placeholder="Passwort eingeben..."
+                onkeypress="if(event.key==='Enter') login()"
+            >
+            <button class="login-btn" onclick="login()">📖 Eintreten →</button>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="app" class="app hidden">
+        <div class="sidebar">
+            <div>
+                <h2>🤖 MOi Resume</h2>
+                <p style="font-size: 0.85rem; color: #999; margin-top: 0.5rem;">Der komplette Kaspar Bot Journey</p>
+            </div>
+
+            <div class="card">
+                <strong>📚 7 Kapitel:</strong>
+                1️⃣ Die Idee<br>
+                2️⃣ Planung<br>
+                3️⃣ Code schreiben<br>
+                4️⃣ System Prompt<br>
+                5️⃣ Lokal testen<br>
+                6️⃣ Zu Netlify<br>
+                7️⃣ Live! 🎉
+            </div>
+
+            <div class="card">
+                <strong>✅ Du lernst:</strong>
+                • Kaspar Architektur<br>
+                • Frontend + Backend<br>
+                • Claude Integration<br>
+                • Netlify Deploy<br>
+                • Full Stack Bot
+            </div>
+
+            <div class="card">
+                <strong>🔧 Tech Stack:</strong>
+                Node.js<br>
+                Express.js<br>
+                Claude API<br>
+                Netlify Functions<br>
+                Vanilla JS
+            </div>
+
+            <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+        </div>
+
+        <div class="chat-area">
+            <div class="header">
+                <h1>🤖 MOi - Der Kaspar Hauser Bot Journey</h1>
+                <p>Ein Step-by-Step Resume wie ich den philosophischen Bot auf Netlify gebaut habe</p>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="setTab(0)">1️⃣ Idee</button>
+                <button class="tab-btn" onclick="setTab(1)">2️⃣ Plan</button>
+                <button class="tab-btn" onclick="setTab(2)">3️⃣ Code</button>
+                <button class="tab-btn" onclick="setTab(3)">4️⃣ Prompt</button>
+                <button class="tab-btn" onclick="setTab(4)">5️⃣ Test</button>
+                <button class="tab-btn" onclick="setTab(5)">6️⃣ Deploy</button>
+                <button class="tab-btn" onclick="setTab(6)">7️⃣ Live</button>
+            </div>
+
+            <div class="messages" id="messages"></div>
+
+            <div class="input-area">
+                <textarea 
+                    class="textarea" 
+                    id="input"
+                    placeholder="Frag mich etwas über den Bot Build... (oder nur Enter)"
+                    onkeypress="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}"
+                ></textarea>
+                <button class="send-btn" onclick="send()">💬</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const pwd = "unwritten-2026";
+        let currentTab = 0;
+
+        const chapters = [
+            {
+                title: "1️⃣ DIE IDEE - Was ist Kaspar Hauser Bot?",
+                content: `<strong>📖 Die Inspiration:</strong>
+<div class="step"><strong>Wer war Kaspar Hauser?</strong><br>
+Eine echte historische Figur (1828-1833)<br>
+Tauchte in Nürnberg auf ohne Vergangenheit<br>
+Sein Leben ist ein Rätsel: "Wer bin ich?"</div>
+
+<strong>💡 Die Bot-Idee:</strong>
+<div class="step">Kaspar als Chatbot verkörpern<br>
+Er antwortet als diese historische Figur<br>
+Philosophisch, nicht oberflächlich<br>
+Mit Metaphern statt Logik</div>
+
+<strong>🎯 Das Ziel:</strong>
+<div class="step">Ein Bot der wirklich spricht wie Kaspar<br>
+Der Leser*innen überrascht<br>
+Der zum Nachdenken bringt<br>
+Der echt wirkt, nicht mechanisch</div>
+
+<strong>⚙️ Die Architektur:</strong>
+<div class="step"><strong>Frontend:</strong> Browser UI (HTML + JS)<br>
+<strong>Backend:</strong> Node.js API<br>
+<strong>AI Engine:</strong> Claude Opus 4.5<br>
+<strong>Hosting:</strong> Netlify (Serverless)</div>`
+            },
+            {
+                title: "2️⃣ PLANUNG - Wie baut man einen Bot?",
+                content: `<strong>📋 Schritt-für-Schritt Plan:</strong>
+
+<div class="step"><strong>Phase 1: Vorbereitung (1-2 Tage)</strong><br>
+✓ Kaspar Hauser Geschichte recherchieren<br>
+✓ Charakter definieren: Tonalität, Grenzen, Wissen<br>
+✓ System Prompt Struktur planen</div>
+
+<div class="step"><strong>Phase 2: Entwicklung (3-5 Tage)</strong><br>
+✓ Backend code schreiben (Express + Claude SDK)<br>
+✓ Frontend HTML/CSS/JS erstellen<br>
+✓ System Prompt verfeinern</div>
+
+<div class="step"><strong>Phase 3: Testen (1-2 Tage)</strong><br>
+✓ Lokal auf Port 3000 testen<br>
+✓ verschiedene Fragen probieren<br>
+✓ Prompt anpassen & iterieren</div>
+
+<div class="step"><strong>Phase 4: Deploy (1 Tag)</strong><br>
+✓ GitHub Repo erstellen<br>
+✓ Zu Netlify verbinden<br>
+✓ Environment Variables setzen<br>
+✓ Live gehen! 🎉</div>
+
+<strong>📁 Dateistruktur:</strong>
+<div class="code">kaspar-bot/
+├── netlify.toml (Netlify Config)
+├── netlify/
+│   └── functions/
+│       └── chat.js (API)
+├── public/
+│   └── index.html (Frontend)
+├── package.json (Dependencies)
+├── .env.example (Secrets Template)
+└── README.md (Dokumentation)</div>`
+            },
+            {
+                title: "3️⃣ CODE SCHREIBEN - Backend + Frontend",
+                content: `<strong>🔧 Backend: netlify/functions/chat.js</strong>
+
+<div class="code">const Anthropic = require('@anthropic-ai/sdk');
+
+exports.handler = async (event) => {
+  const { message } = JSON.parse(event.body);
+  
+  const response = await client.messages.create({
+    model: 'claude-opus-4-5-20251101',
+    system: KASPAR_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: message }],
+    max_tokens: 1024
+  });
+  
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ 
+      reply: response.content[0].text 
+    })
+  };
+};</div>
+
+<strong>🎨 Frontend: public/index.html</strong>
+
+<div class="code">async function sendMessage() {
+  const response = await fetch(
+    '/.netlify/functions/chat',
+    {
+      method: 'POST',
+      body: JSON.stringify({ 
+        message: userInput 
+      })
+    }
+  );
+  
+  const data = await response.json();
+  showMessage(data.reply);
+}</div>
+
+<strong>✅ Das ist alles Code den du brauchst!</strong>
+<div class="step">Der Rest ist HTML/CSS für Design<br>
+Keine komplexen Frameworks nötig<br>
+Vanilla JavaScript reicht aus<br>
+Einfach und wartbar</div>`
+            },
+            {
+                title: "4️⃣ SYSTEM PROMPT - Das Geheimnis",
+                content: `<strong>🧠 Die System Prompt ist das Herz!</strong>
+
+<strong>Struktur (89 Zeilen):</strong>
+
+<div class="step"><strong>1. WER DU BIST:</strong><br>
+"Du bist Kaspar Hauser"<br>
+Kein Opfer, sondern Beobachter<br>
+Neugierig mit Klarheit</div>
+
+<div class="step"><strong>2. WIE DU SPRICHST:</strong><br>
+Klar, nachdenklich, bildhaft<br>
+Altertümliche Wendungen<br>
+Fragen statt Behauptungen</div>
+
+<div class="step"><strong>3. WAS DU WEISST:</strong><br>
+1828-1833 Nürnberg/Ansbach<br>
+Früher 19. Jahrhundert<br>
+Philosophische Fragen</div>
+
+<div class="step"><strong>4. WAS DU NICHT WEISST:</strong><br>
+Nichts nach 1833<br>
+Keine modernen Konzepte<br>
+Keine Technologie</div>
+
+<div class="step"><strong>5. ZU VERMEIDEN:</strong><br>
+"Ich bin ein KI-Modell"<br>
+Emojis, moderne Sprache<br>
+Belehrend wirken</div>
+
+<strong>🔑 Das Geheimnis:</strong>
+<div class="step">Je präziser die Prompt<br>
+↓<br>
+Desto besser der Bot<br>
+↓<br>
+Desto echter die Antworten</div>
+
+<div class="warning">⚠️ Die System Prompt ist NICHT die Geschichte!<br>
+Sie ist wie ein Charakter-Dossier für Claude<br>
+Sie sagt: "Spiel diese Rolle genau so"</div>`
+            },
+            {
+                title: "5️⃣ LOKAL TESTEN - Alles checken",
+                content: `<strong>🧪 Lokal auf deinem Computer testen:</strong>
+
+<div class="step"><strong>Schritt 1: Dependencies installieren</strong>
+<div class="code">npm install express @anthropic-ai/sdk dotenv</div>
+</div>
+
+<div class="step"><strong>Schritt 2: .env erstellen</strong>
+<div class="code">ANTHROPIC_API_KEY=sk-ant-v0-...</div>
+</div>
+
+<div class="step"><strong>Schritt 3: Server starten</strong>
+<div class="code">npm start
+# Öffne http://localhost:3000</div>
+</div>
+
+<div class="step"><strong>Schritt 4: Testen im Browser</strong>
+Frag: "Wer bist du wirklich, Kaspar?"<br>
+Kaspar sollte mit Philosophie antworten<br>
+NICHT mit "Ich bin ein ChatBot"
+</div>
+
+<strong>✅ Gutes Zeichen:</strong>
+<div class="success">
+✓ Chat lädt<br>
+✓ Input funktioniert<br>
+✓ Antwort kommt innerhalb 3 Sekunden<br>
+✓ Antwort ist in Kaspars Stimme<br>
+✓ Keine JavaScript Errors (F12 Console)
+</div>
+
+<strong>❌ Fehler beheben:</strong>
+<div class="warning">
+✗ "API Key undefined" → .env Check<br>
+✗ "Cannot find module" → npm install erneut<br>
+✗ "Port 3000 in use" → Anderer Port: PORT=3001 npm start<br>
+✗ "Keine Antwort" → Check Backend Logs
+</div>
+
+<strong>🔄 Iteration:</strong>
+<div class="step">Teste verschiedene Fragen<br>
+Beobachte Kaspars Antworten<br>
+Wenn nicht perfekt: System Prompt anpassen<br>
+Deploy erneut zu Netlify<br>
+Wieder testen → Iterieren</div>`
+            },
+            {
+                title: "6️⃣ ZU NETLIFY DEPLOYEN - Live gehen",
+                content: `<strong>🚀 Schritt-für-Schritt zu Netlify:</strong>
+
+<div class="step"><strong>Schritt 1: GitHub Repo erstellen</strong>
+<div class="code">git init
+git add .
+git commit -m "Initial Kaspar Bot"
+git branch -M main
+git remote add origin https://github.com/dein-username/kaspar-bot
+git push -u origin main</div>
+</div>
+
+<div class="step"><strong>Schritt 2: Netlify verbinden</strong>
+→ netlify.com öffnen<br>
+→ GitHub autorisieren<br>
+→ "Import an existing project"<br>
+→ Repository wählen: kaspar-bot<br>
+→ "Connect & Deploy"
+</div>
+
+<div class="step"><strong>Schritt 3: Build Settings</strong>
+<div class="code">Build command: npm install
+Functions directory: netlify/functions
+Publish directory: public</div>
+</div>
+
+<div class="step"><strong>Schritt 4: Environment Variables</strong>
+Netlify Dashboard → Settings → Build & Deploy<br>
+→ Environment<br>
+→ Add variable<br>
+KEY: ANTHROPIC_API_KEY<br>
+VALUE: sk-ant-... (dein echter API Key!)
+</div>
+
+<div class="step"><strong>Schritt 5: Deploy!</strong>
+Klick "Deploy site"<br>
+Warte 1-2 Minuten<br>
+Netlify buildet automatisch<br>
+✅ Site ist LIVE!
+</div>
+
+<strong>🔗 Deine URL:</strong>
+<div class="code">https://kaspar-bot.netlify.app
+(oder dein Custom Domain)</div>
+
+<div class="success">✅ ERFOLG!<br>
+Dein Bot läuft jetzt auf Netlify<br>
+Erreichbar von überall<br>
+24/7 online</div>`
+            },
+            {
+                title: "7️⃣ LIVE! 🎉 Der Bot ist in der Welt",
+                content: `<strong>🌍 Kaspar Hauser Bot ist LIVE!</strong>
+
+<div class="success">
+✅ Bot antwortet in Kaspars Stimme<br>
+✅ Hosted auf Netlify (kostenlos)<br>
+✅ Schnell & zuverlässig<br>
+✅ Skalierbar für tausende Nutzer<br>
+✅ 24/7 online
+</div>
+
+<strong>📊 Was du gelernt hast:</strong>
+
+<div class="step"><strong>Technische Skills:</strong>
+• Node.js Backend bauen<br>
+• Express.js Server<br>
+• Claude API Integration<br>
+• Netlify Functions (Serverless)<br>
+• Frontend-Backend Kommunikation</div>
+
+<div class="step"><strong>AI Skills:</strong>
+• System Prompts schreiben<br>
+• Characters definieren<br>
+• Claude "dressieren"<br>
+• Prompt Engineering<br>
+• Iteration & Refinement</div>
+
+<div class="step"><strong>Deployment Skills:</strong>
+• GitHub mit Netlify verbinden<br>
+• Build Pipelines verstehen<br>
+• Environment Variables<br>
+• CI/CD Basics<br>
+• Production-Ready Code</div>
+
+<strong>🚀 Was kommt jetzt?</strong>
+
+<div class="step"><strong>Einfach:</strong>
+• Andere Characters (Shakespeare, Sherlock, etc.)<br>
+• Multi-Turn Conversations<br>
+• User Authentication<br>
+• Analytics & Logging</div>
+
+<div class="step"><strong>Fortgeschritten:</strong>
+• Voice Input/Output<br>
+• Memory zwischen Sessions<br>
+• Fine-Tuning des Models<br>
+• Custom Domains<br>
+• Team Collaboration</div>
+
+<strong>💬 Am Ende:</strong>
+<div class="warning">
+Du hast einen ECHTEN PRODUKTIVEN BOT gebaut!<br>
+Du kannst ihn verbessern, anpassen, monetisieren<br>
+Du verstehst jetzt wie moderne AI Apps funktionieren<br>
+Du kannst das auf andere Projekte übertragen
+</div>
+
+<strong>🎓 Glückwunsch! 🎉</strong>
+<div class="success">
+Du bist jetzt ein AI Bot Developer!<br>
+Der Kaspar Hauser Bot ist dein Beweis<br>
+Das System Prompt ist deine Kraft<br>
+Claude ist dein Werkzeug<br>
+<br>
+Baue mehr Bots! 🚀
+</div>`
+            }
+        ];
+
+        function login() {
+            if (document.getElementById('pwd').value === pwd) {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
+                setTab(0);
+            } else {
+                alert('❌ Falsches Passwort!\nHint: Denk an Unwritten!');
+            }
+        }
+
+        function logout() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('app').classList.add('hidden');
+            document.getElementById('pwd').value = '';
+            document.getElementById('input').value = '';
+        }
+
+        function setTab(index) {
+            currentTab = index;
+            
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-btn')[index].classList.add('active');
+            
+            const msgs = document.getElementById('messages');
+            msgs.innerHTML = '';
+
+            const chapter = chapters[index];
+            const div = document.createElement('div');
+            div.className = 'msg bot';
+            div.innerHTML = `
+                <div class="avatar">🤖</div>
+                <div class="content">
+                    <strong>${chapter.title}</strong><br><br>
+                    ${chapter.content}
+                </div>
+            `;
+            msgs.appendChild(div);
+            msgs.scrollTop = 0;
+        }
+
+        async function send() {
+            const input = document.getElementById('input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const msgs = document.getElementById('messages');
+            
+            const userDiv = document.createElement('div');
+            userDiv.className = 'msg user';
+            userDiv.innerHTML = `<div class="content">${text}</div><div class="avatar">👤</div>`;
+            msgs.appendChild(userDiv);
+
+            input.value = '';
+
+            setTimeout(() => {
+                const response = getResponse(text);
+                const botDiv = document.createElement('div');
+                botDiv.className = 'msg bot';
+                botDiv.innerHTML = `
+                    <div class="avatar">🤖</div>
+                    <div class="content"><strong>MOi:</strong><br><br>${response}</div>
+                `;
+                msgs.appendChild(botDiv);
+                msgs.scrollTop = msgs.scrollHeight;
+            }, 300);
+        }
+
+        function getResponse(q) {
+            const lower = q.toLowerCase();
+
+            if (lower.includes('prompt')) {
+                return `Die System Prompt ist das Wichtigste!<br><br>
+<div class="step">Sie ist kein Regelwerk, sondern ein Charakter-Dossier<br>
+Sie sagt Claude genau wer Kaspar ist<br>
+WIE er spricht<br>
+WAS er weiß<br>
+WAS er NICHT weiß<br><br>
+Je präziser → Je besser der Bot</div>`;
+            }
+
+            if (lower.includes('code')) {
+                return `Der Code ist überraschend einfach!<br><br>
+<div class="step"><strong>Backend (chat.js):</strong><br>
+Fetch the message<br>
+Call Claude API<br>
+Return response<br><br>
+<strong>Frontend (index.html):</strong><br>
+Send message<br>
+Display response<br>
+That's it!</div>`;
+            }
+
+            if (lower.includes('netlify') || lower.includes('deploy')) {
+                return `Zu Netlify deployen ist ein Traum!<br><br>
+<div class="step">1. GitHub Repo erstellen<br>
+2. Netlify mit GitHub verbinden<br>
+3. ANTHROPIC_API_KEY setzen<br>
+4. Deploy klicken<br>
+5. ✅ LIVE!<br><br>
+Total: ~10 Minuten</div>`;
+            }
+
+            if (lower.includes('lernen')) {
+                return `Was du von diesem Projekt lernst:<br><br>
+<div class="step">✅ Wie Claude API funktioniert<br>
+✅ Backend + Frontend zusammenbringen<br>
+✅ System Prompts schreiben<br>
+✅ Netlify Functions (Serverless)<br>
+✅ Full Stack Development<br>
+✅ AI Apps bauen<br><br>
+Das ist ECHTES WISSEN!</div>`;
+            }
+
+            if (lower.includes('schwierig')) {
+                return `Das Schwierigste ist die System Prompt!<br><br>
+<div class="step">Den Code kopieren ist einfach<br>
+Das Frontend ist HTML + JS Basics<br>
+Netlify Deploy ist 3 Klicks<br><br>
+ABER: Die System Prompt<br>
+= Kunst + Wissenschaft<br>
+= Charakter definieren<br>
+= Iterieren & testen<br><br>
+Das ist wo die Magie passiert</div>`;
+            }
+
+            if (lower.includes('kaspar')) {
+                return `Kaspar Hauser ist eine echte historische Figur!<br><br>
+<div class="step"><strong>1828:</strong> Tauchte in Nürnberg auf<br>
+<strong>1829:</strong> Lerntes die Welt kennen<br>
+<strong>1833:</strong> Starb unter mysteriösen Umständen<br><br>
+Sein Leben ist ein Rätsel: "Wer bin ich?"<br><br>
+Genau das macht ihn als Bot so wertvoll!</div>`;
+            }
+
+            return `Du kannst mich über jeden Schritt fragen!<br><br>
+<div class="step">💭 Frag nach:<br>
+• System Prompt Geheimnis<br>
+• Code Erklärung<br>
+• Netlify Deployment<br>
+• Was du gelernt hast<br>
+• Nächste Schritte<br>
+• Kaspar Hauser<br>
+• Technische Details<br><br>
+Ich erkläre alles! 🚀</div>`;
+        }
+    </script>
+</body>
+</html>
